@@ -258,16 +258,27 @@ body.submitted #submitBtn{display:none}
 <!-- 3 -->
 <section class="task">
   <div class="task-head"><span class="num">3</span><h3>Тип накопичувача</h3></div>
-  <p class="how"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → <span class="path">Продуктивність</span> → <span class="path">Диск 0</span>. Запишіть дані.</p>
-  <div class="body">
-    <div class="field inline"><span>Тип</span>
-      <div class="seg" role="radiogroup" aria-label="Тип диска">
-        <label><input type="radio" name="t3_type" value="SSD" data-key="t3_type"><span>SSD</span></label>
-        <label><input type="radio" name="t3_type" value="HDD" data-key="t3_type"><span>HDD</span></label>
-      </div></div>
-    <label class="field"><span>Модель (правий верхній кут)</span><input type="text" data-key="t3_model" placeholder=" "></label>
-    <label class="field"><span>Обсяг</span><input type="text" data-key="t3_size" placeholder=" " style="max-width:220px"></label>
-  </div>
+  <p class="how"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → <span class="path">Продуктивність</span>. Знайдіть диски з позначками <b>(C:)</b> і <b>(D:)</b> у назві, наприклад «Диск 0 (C:)». Модель — у правому верхньому куті.</p>
+  <div class="body scroll"><table>
+    <tr><th>Диск</th><th>Номер</th><th>Тип</th><th>Модель</th><th>Обсяг</th></tr>
+    <tr><td><b>C:</b></td>
+      <td><input type="text" data-key="t3_c_num" placeholder=" " aria-label="C: номер диска" style="min-width:80px"></td>
+      <td><div class="seg" role="radiogroup" aria-label="C: тип">
+        <label><input type="radio" name="t3_c_type" value="SSD" data-key="t3_c_type"><span>SSD</span></label>
+        <label><input type="radio" name="t3_c_type" value="HDD" data-key="t3_c_type"><span>HDD</span></label>
+      </div></td>
+      <td><input type="text" data-key="t3_c_model" placeholder=" " aria-label="C: модель"></td>
+      <td><input type="text" data-key="t3_c_size" placeholder=" " aria-label="C: обсяг" style="min-width:80px"></td></tr>
+    <tr><td><b>D:</b></td>
+      <td><input type="text" data-key="t3_d_num" placeholder=" " aria-label="D: номер диска" style="min-width:80px"></td>
+      <td><div class="seg" role="radiogroup" aria-label="D: тип">
+        <label><input type="radio" name="t3_d_type" value="SSD" data-key="t3_d_type"><span>SSD</span></label>
+        <label><input type="radio" name="t3_d_type" value="HDD" data-key="t3_d_type"><span>HDD</span></label>
+      </div></td>
+      <td><input type="text" data-key="t3_d_model" placeholder=" " aria-label="D: модель"></td>
+      <td><input type="text" data-key="t3_d_size" placeholder=" " aria-label="D: обсяг" style="min-width:80px"></td></tr>
+  </table>
+  <p class="hint">Якщо C: і D: розташовані на одному фізичному диску («Диск 0 (C: D:)»), рядки будуть однакові.</p></div>
 </section>
 
 <div class="part"><h2>Дефрагментація</h2><p>Як частини файлів розкидаються по диску</p></div>
@@ -373,7 +384,7 @@ body.submitted #submitBtn{display:none}
 
 <script>
 (function(){
-  var STORE = "pr-fs8-v12";
+  var STORE = "pr-fs8-v13";
 
 
   // ---- модель диска ----
