@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практична робота: файлові системи та обслуговування дисків</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f3; --surface:#ffffff; --ink:#18222d; --muted:#5d6875; --line:#d5dbe1;
+  --accent:#1f6fb2; --accent-ink:#ffffff; --accent-soft:#e1edf7;
+  --track:#dde3e8; --done:#2e7d4f; --done-soft:#e2f2e8;
+  --warn-bg:#fff3d6; --warn-ink:#6d4a00;
+  --code-bg:#18222d; --code-ink:#e6edf3; --field:#f7f9fa;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11171d; --surface:#18212a; --ink:#e6ebef; --muted:#9aa6b2; --line:#2c3844;
+    --accent:#5aa4e6; --accent-ink:#0d1620; --accent-soft:#1c3348;
+    --track:#26323d; --done:#5cc58a; --done-soft:#173226;
+    --warn-bg:#3a2e12; --warn-ink:#f2d38a;
+    --code-bg:#0c1116; --code-ink:#e6edf3; --field:#121a21;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11171d; --surface:#18212a; --ink:#e6ebef; --muted:#9aa6b2; --line:#2c3844;
+  --accent:#5aa4e6; --accent-ink:#0d1620; --accent-soft:#1c3348;
+  --track:#26323d; --done:#5cc58a; --done-soft:#173226;
+  --warn-bg:#3a2e12; --warn-ink:#f2d38a;
+  --code-bg:#0c1116; --code-ink:#e6edf3; --field:#121a21;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Onest",system-ui,"Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.55}
+img{max-width:100%}
+.wrap{max-width:780px;margin:0 auto;padding:0 20px}
+
+/* ---- верхня панель: «диск» заповнення ---- */
+.bar{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:16px;padding-top:10px;padding-bottom:10px}
+.drive{flex:1;min-width:0}
+.drive-top{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
+.drive-top b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{height:14px;background:var(--track);border:1px solid var(--line);margin-top:5px;overflow:hidden}
+.fill{height:100%;width:0;background:var(--accent);transition:width .3s ease}
+body.submitted .fill{background:var(--done)}
+.icon{width:40px;height:30px;flex:none;border:2px solid var(--ink);border-radius:3px;position:relative}
+.icon::after{content:"";position:absolute;left:5px;right:5px;bottom:5px;height:3px;background:var(--accent)}
+body.submitted .icon::after{background:var(--done)}
+
+/* ---- шапка ---- */
+header.intro{padding:40px 0 8px}
+h1{font-size:34px;line-height:1.15;font-weight:700;margin:0 0 12px;letter-spacing:-.01em;max-width:18em}
+.meta{color:var(--muted);margin:0 0 22px}
+.student{display:inline-block;min-width:180px;background:var(--surface);border:1px solid var(--line);padding:16px}
+.student label{font-size:14px;color:var(--muted);display:block;margin-bottom:4px}
+
+/* ---- поля ---- */
+input[type=text],input[type=number],textarea,select{
+  width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--field);
+  border:1px solid var(--line);border-radius:4px;padding:8px 10px}
+textarea{min-height:64px;resize:vertical}
+select{min-width:220px;cursor:pointer}
+select:disabled{cursor:default;appearance:none}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+input:disabled,textarea:disabled,select:disabled{opacity:1;color:var(--ink);background:transparent;border-style:dashed}
+.field{margin:10px 0}
+.field > span{display:block;margin-bottom:4px}
+.inline > span{display:inline;margin:0}
+.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.inline input{max-width:180px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--field)}
+.seg label{cursor:pointer}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{display:block;white-space:nowrap;padding:6px 14px;font-weight:500;min-width:44px;text-align:center;border-left:1px solid var(--line)}
+.seg label:first-child span{border-left:0}
+.seg input:checked + span{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible + span{outline:2px solid var(--accent);outline-offset:-3px}
+body.submitted .seg label{cursor:default}
+
+/* ---- розділи ---- */
+details.ref{background:var(--surface);border:1px solid var(--line);margin:28px 0 8px}
+details.ref summary{cursor:pointer;padding:14px 16px;font-weight:600;font-size:18px}
+details.ref summary:focus-visible{outline:2px solid var(--accent)}
+.ref-body{padding:0 16px 16px}
+.ref-body p{margin:12px 0}
+
+.task{padding:30px 0 6px;border-top:1px solid var(--line);margin-top:30px}
+.task-head{display:flex;gap:14px;align-items:baseline}
+.num{font-size:40px;line-height:1;font-weight:700;color:var(--accent);min-width:1.1em;font-variant-numeric:tabular-nums}
+h2,h3{font-size:22px;line-height:1.25;margin:0;font-weight:600}
+.part{margin-top:56px;padding:14px 0 4px;border-bottom:3px solid var(--ink)}
+.part h2{font-size:28px;font-weight:700}
+.part p{margin:4px 0 0;color:var(--muted)}
+.part + .task{border-top:0;margin-top:0}
+
+.sim{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;margin:14px 0}
+.sim-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%;max-width:330px}
+.cell{aspect-ratio:1;border:1px solid var(--line);background:var(--field);border-radius:3px;cursor:pointer;
+  font:600 15px/1 "Onest",system-ui,sans-serif;color:#fff;padding:0;display:flex;align-items:center;justify-content:center}
+.cell sub{font-size:10px;font-weight:500;margin-left:1px;vertical-align:baseline}
+.cell.f-A{background:#1f6fb2;border-color:#1f6fb2}
+.cell.f-B{background:#c2571a;border-color:#c2571a}
+.cell.f-C{background:#2e7d4f;border-color:#2e7d4f}
+.cell.f-D{background:#7b4bb7;border-color:#7b4bb7}
+.cell.sel{outline:3px solid var(--ink);outline-offset:1px}
+.sim.picking .cell.free{border:1px dashed var(--muted)}
+.cell:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.cell:disabled{cursor:default}
+.sim-side{flex:1;min-width:220px}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;margin-bottom:14px}
+.stats b{font-size:28px;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:0 0 14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.sim-status{font-weight:600;min-height:1.5em;margin:10px 0 0}
+.btn-sm{font:inherit;font-size:15px;font-weight:500;padding:6px 12px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;margin:0 6px 6px 0}
+.btn-sm:focus-visible{outline:2px solid var(--accent)}
+.btn-sm:disabled{opacity:.5;cursor:default}
+.how{margin:10px 0 14px;padding-left:calc(1.1em * 40 / 17 + 14px)}
+.body{padding-left:calc(1.1em * 40 / 17 + 14px)}
+kbd{font-family:inherit;font-size:.88em;background:var(--surface);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;white-space:nowrap}
+.path{font-weight:600}
+.hint{color:var(--muted);font-size:15px}
+ol.q{margin:8px 0;padding-left:1.3em}
+ol.q > li{margin:14px 0}
+
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:16px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:middle}
+th{background:var(--accent-soft);font-weight:600}
+td input[type=text]{min-width:110px}
+.t-ref td:first-child{font-weight:600;white-space:nowrap}
+.t5 td:nth-child(2){min-width:230px}
+.t5 td:last-child{min-width:190px}
+
+.code{position:relative;background:var(--code-bg);color:var(--code-ink);border-radius:4px;margin:12px 0}
+.code pre{margin:0;padding:44px 16px 14px;overflow-x:auto;font-family:"JetBrains Mono",Consolas,monospace;font-size:14px;line-height:1.6}
+.copy{position:absolute;top:8px;right:8px;font:inherit;font-size:13px;background:transparent;color:var(--code-ink);border:1px solid #4a5866;border-radius:4px;padding:3px 10px;cursor:pointer}
+.copy:focus-visible{outline:2px solid var(--accent)}
+
+.warn{background:var(--warn-bg);color:var(--warn-ink);padding:10px 14px;margin:16px 0 0;border-radius:4px}
+
+/* ---- здача ---- */
+.finish{margin:44px 0 30px;padding:22px;background:var(--surface);border:1px solid var(--line)}
+.finish h2{margin-bottom:6px}
+.btn{font:inherit;font-weight:600;font-size:17px;border-radius:4px;padding:11px 20px;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent);color:var(--accent-ink)}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.msg{margin-top:12px;min-height:1em}
+.msg.bad{color:#b3261e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .msg.bad{color:#ff8a80}}
+:root[data-theme="dark"] .msg.bad{color:#ff8a80}
+.stamp{display:none;background:var(--done-soft);border-left:4px solid var(--done);padding:14px 16px;margin-top:4px}
+.stamp b{display:block;font-size:19px}
+body.submitted .stamp{display:block}
+body.submitted #submitBtn{display:none}
+
+.empty-mark input:not(:disabled):placeholder-shown,
+.empty-mark textarea:not(:disabled):placeholder-shown,
+.empty-mark select:not(:disabled):invalid{border-color:#d9822b;background:var(--warn-bg)}
+
+.grading{margin:0 0 50px}
+.grading td:last-child,.grading th:last-child{text-align:center;width:90px}
+
+@media (max-width:600px){
+  body{font-size:16px}
+  h1{font-size:27px}
+  .student{grid-template-columns:1fr}
+  .how,.body{padding-left:0}
+  .num{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="bar" role="status" aria-live="polite">
+  <div class="wrap">
+    <div class="icon" aria-hidden="true"></div>
+    <div class="drive">
+      <div class="drive-top"><b id="whoLabel">Практична робота</b><span id="progLabel">Заповнено 0 з 0</span></div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="form">
+
+<header class="intro">
+  <h1>Файлові системи та обслуговування дисків</h1>
+  <p class="meta">Практична робота для 8 класу. Windows 11, 35 хвилин. Відповіді зберігаються, поки відкрита ця вкладка.</p>
+  <p class="warn">Нічого не видаляйте і не змінюйте на комп’ютері. Виняток — папка <b>fs-test</b> із завдання 5.</p>
+</header>
+
+<details class="ref">
+  <summary>Довідка</summary>
+  <div class="ref-body">
+    <div class="scroll"><table>
+      <tr><th>Файлова система</th><th>Де використовується</th><th>Макс. розмір файлу</th></tr>
+      <tr><td>FAT32</td><td>флешки, старі пристрої</td><td>4 ГБ</td></tr>
+      <tr><td>exFAT</td><td>флешки для Windows і macOS</td><td>практично без обмежень</td></tr>
+      <tr><td>NTFS</td><td>диски Windows</td><td>практично без обмежень</td></tr>
+      <tr><td>ext4</td><td>Linux, Android</td><td>16 ТБ</td></tr>
+      <tr><td>APFS</td><td>macOS, iOS</td><td>практично без обмежень</td></tr>
+    </table></div>
+    <p><b>Форматування</b> створює на диску файлову систему, усі дані знищуються. Швидке форматування очищує лише таблицю файлів, повне ще й перевіряє диск на пошкоджені сектори.</p>
+    <p><b>Кластер</b> — найменша ділянка диска, яку файлова система виділяє під файл. Тому файл займає на диску трохи більше місця, ніж його розмір.</p>
+    <p><b>Фрагментація</b> — коли частини файлу лежать у різних місцях диска. Жорсткому диску (HDD) доводиться переміщувати головку, і читання сповільнюється. <b>Дефрагментація</b> збирає частини файлів разом. SSD дефрагментація не потрібна.</p>
+    <div class="scroll"><table class="t-ref">
+      <tr><th></th><th>Логічне ушкодження</th><th>Фізичне ушкодження</th></tr>
+      <tr><td>Що це</td><td>помилки даних або файлової системи</td><td>несправність самого пристрою</td></tr>
+      <tr><td>Причини</td><td>вимкнення живлення, віруси, неправильне виймання флешки</td><td>удар, перегрів, волога, стрибок напруги, знос</td></tr>
+      <tr><td>Усунення</td><td>програмно</td><td>ремонт або заміна</td></tr>
+      <tr><td>Ознака в Терміналі</td><td><b>VolumeDirty = True</b> — є помилки файлової системи</td><td><b>Status</b> не <b>OK</b> — диск несправний</td></tr>
+    </table></div>
+  </div>
+</details>
+
+<div class="part"><h2>Дані дисків</h2><p>Файлова система, обсяг, тип і стан накопичувача</p></div>
+
+<!-- 1 -->
+<section class="task">
+  <div class="task-head"><span class="num">1</span><h3>Файлова система дисків</h3></div>
+  <p class="how"><kbd>Win</kbd> + <kbd>E</kbd> → <span class="path">Цей ПК</span> → виділіть диск → <kbd>Alt</kbd> + <kbd>Enter</kbd> (або правою кнопкою → <span class="path">Властивості</span>). Файлова система — на вкладці <span class="path">Загальні</span>, під рядком «Тип».</p>
+  <div class="body scroll"><table>
+    <tr><th>Диск</th><th>Файлова система</th><th>Обсяг</th><th>Вільно</th></tr>
+    <tr><td><b>C:</b></td>
+      <td><input type="text" data-key="t1_c_fs" placeholder=" " aria-label="C: файлова система"></td>
+      <td><input type="text" data-key="t1_c_size" placeholder=" " aria-label="C: обсяг"></td>
+      <td><input type="text" data-key="t1_c_free" placeholder=" " aria-label="C: вільно"></td></tr>
+    <tr><td><b>D:</b></td>
+      <td><input type="text" data-key="t1_d_fs" placeholder=" " aria-label="D: файлова система"></td>
+      <td><input type="text" data-key="t1_d_size" placeholder=" " aria-label="D: обсяг"></td>
+      <td><input type="text" data-key="t1_d_free" placeholder=" " aria-label="D: вільно"></td></tr>
+  </table></div>
+</section>
+
+<!-- 2 -->
+<section class="task">
+  <div class="task-head"><span class="num">2</span><h3>Обсяг диска в байтах</h3></div>
+  <p class="how"><kbd>Win</kbd> + <kbd>X</kbd> → <span class="path">Термінал</span> (не «адміністратор»). Скопіюйте команду, вставте в Термінал (<kbd>Ctrl</kbd> + <kbd>V</kbd>) і натисніть <kbd>Enter</kbd>. Переведіть значення для C: і D: у ГБ: поділіть на 1024 тричі, округліть до десятих.</p>
+  <div class="body">
+    <div class="code"><button class="copy" type="button" data-copy="cmd2">Копіювати</button><pre id="cmd2">Get-CimInstance Win32_LogicalDisk | Format-Table DeviceID, FileSystem, Size, FreeSpace</pre></div>
+    <div class="scroll"><table>
+      <tr><th>Диск</th><th>Параметр</th><th>Байти</th><th>ГБ</th></tr>
+      <tr><td><b>C:</b></td><td>Size</td><td><input type="text" data-key="t2_c_size_b" placeholder=" " aria-label="C: Size у байтах"></td><td><input type="text" data-key="t2_c_size_gb" placeholder=" " aria-label="C: Size у ГБ"></td></tr>
+      <tr><td><b>C:</b></td><td>FreeSpace</td><td><input type="text" data-key="t2_c_free_b" placeholder=" " aria-label="C: FreeSpace у байтах"></td><td><input type="text" data-key="t2_c_free_gb" placeholder=" " aria-label="C: FreeSpace у ГБ"></td></tr>
+      <tr><td><b>D:</b></td><td>Size</td><td><input type="text" data-key="t2_d_size_b" placeholder=" " aria-label="D: Size у байтах"></td><td><input type="text" data-key="t2_d_size_gb" placeholder=" " aria-label="D: Size у ГБ"></td></tr>
+      <tr><td><b>D:</b></td><td>FreeSpace</td><td><input type="text" data-key="t2_d_free_b" placeholder=" " aria-label="D: FreeSpace у байтах"></td><td><input type="text" data-key="t2_d_free_gb" placeholder=" " aria-label="D: FreeSpace у ГБ"></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="task">
+  <div class="task-head"><span class="num">3</span><h3>Тип накопичувача</h3></div>
+  <p class="how"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → <span class="path">Продуктивність</span> → <span class="path">Диск 0</span>. Запишіть дані.</p>
+  <div class="body">
+    <div class="field inline"><span>Тип</span>
+      <div class="seg" role="radiogroup" aria-label="Тип диска">
+        <label><input type="radio" name="t3_type" value="SSD" data-key="t3_type"><span>SSD</span></label>
+        <label><input type="radio" name="t3_type" value="HDD" data-key="t3_type"><span>HDD</span></label>
+      </div></div>
+    <label class="field"><span>Модель (правий верхній кут)</span><input type="text" data-key="t3_model" placeholder=" "></label>
+    <label class="field"><span>Обсяг</span><input type="text" data-key="t3_size" placeholder=" " style="max-width:220px"></label>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="task">
+  <div class="task-head"><span class="num">4</span><h3>Стан диска</h3></div>
+  <p class="how">У Терміналі виконайте обидві команди й запишіть значення. Розшифровка — у довідці.</p>
+  <div class="body">
+    <div class="code"><button class="copy" type="button" data-copy="cmd4a">Копіювати</button><pre id="cmd4a">Get-CimInstance Win32_DiskDrive | Format-Table Model, Status</pre></div>
+    <div class="code"><button class="copy" type="button" data-copy="cmd4b">Копіювати</button><pre id="cmd4b">Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:' OR DeviceID='D:'" | Format-Table DeviceID, VolumeDirty</pre></div>
+    <div class="scroll"><table>
+      <tr><th>Параметр</th><th>Значення</th><th>Стан</th></tr>
+      <tr><td><b>Status</b> (фізичний, усі диски)</td>
+        <td><input type="text" data-key="t4_status" placeholder=" " aria-label="Status"></td>
+        <td><div class="seg" role="radiogroup" aria-label="Фізичний стан">
+          <label><input type="radio" name="t4_phys" value="Справний" data-key="t4_phys"><span>Справний</span></label>
+          <label><input type="radio" name="t4_phys" value="Несправний" data-key="t4_phys"><span>Несправний</span></label>
+        </div></td></tr>
+      <tr><td><b>VolumeDirty C:</b> (логічний)</td>
+        <td><input type="text" data-key="t4_dirty_c" placeholder=" " aria-label="VolumeDirty C:"></td>
+        <td><div class="seg" role="radiogroup" aria-label="Логічний стан C:">
+          <label><input type="radio" name="t4_log_c" value="Без помилок" data-key="t4_log_c"><span>Без помилок</span></label>
+          <label><input type="radio" name="t4_log_c" value="Є помилки" data-key="t4_log_c"><span>Є помилки</span></label>
+        </div></td></tr>
+      <tr><td><b>VolumeDirty D:</b> (логічний)</td>
+        <td><input type="text" data-key="t4_dirty_d" placeholder=" " aria-label="VolumeDirty D:"></td>
+        <td><div class="seg" role="radiogroup" aria-label="Логічний стан D:">
+          <label><input type="radio" name="t4_log_d" value="Без помилок" data-key="t4_log_d"><span>Без помилок</span></label>
+          <label><input type="radio" name="t4_log_d" value="Є помилки" data-key="t4_log_d"><span>Є помилки</span></label>
+        </div></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<div class="part"><h2>Дефрагментація</h2><p>Кластери і фрагментація файлів</p></div>
+
+<!-- 5 -->
+<section class="task">
+  <div class="task-head"><span class="num">5</span><h3>Розмір файлу і кластер</h3></div>
+  <p class="how">У Терміналі виконайте команди по черзі.</p>
+  <div class="body">
+    <ol class="q">
+      <li>Створіть папку <b>fs-test</b> із трьома файлами (1000, 5000 і 10 000 символів):
+        <div class="code"><button class="copy" type="button" data-copy="cmd5a">Копіювати</button><pre id="cmd5a">New-Item -ItemType Directory "$env:USERPROFILE\fs-test" -Force | Out-Null; 1000, 5000, 10000 | ForEach-Object { Set-Content "$env:USERPROFILE\fs-test\f$_.txt" ('A' * $_) -NoNewline }</pre></div></li>
+      <li>Відкрийте папку:
+        <div class="code"><button class="copy" type="button" data-copy="cmd5b">Копіювати</button><pre id="cmd5b">explorer "$env:USERPROFILE\fs-test"</pre></div></li>
+      <li>Виділіть кожен файл → <kbd>Alt</kbd> + <kbd>Enter</kbd>. Запишіть <span class="path">Розмір</span> і <span class="path">На диску</span>.</li>
+    </ol>
+    <div class="scroll"><table>
+      <tr><th>Файл</th><th>Розмір</th><th>На диску</th></tr>
+      <tr><td>f1000.txt</td><td><input type="text" data-key="t5_1_s" placeholder=" " aria-label="f1000 розмір"></td><td><input type="text" data-key="t5_1_d" placeholder=" " aria-label="f1000 на диску"></td></tr>
+      <tr><td>f5000.txt</td><td><input type="text" data-key="t5_2_s" placeholder=" " aria-label="f5000 розмір"></td><td><input type="text" data-key="t5_2_d" placeholder=" " aria-label="f5000 на диску"></td></tr>
+      <tr><td>f10000.txt</td><td><input type="text" data-key="t5_3_s" placeholder=" " aria-label="f10000 розмір"></td><td><input type="text" data-key="t5_3_d" placeholder=" " aria-label="f10000 на диску"></td></tr>
+    </table></div>
+    <p class="hint">Розмір кластера Windows не показує — визначте його самі. Файл f1000.txt менший за один кластер, тому займає рівно один: його значення «На диску» і є розміром кластера. Перевірте: «На диску» інших файлів має ділитися на нього без остачі.</p>
+    <div class="field inline"><span>Розмір кластера</span><input type="text" data-key="t5_cluster" placeholder=" " aria-label="Розмір кластера" style="max-width:120px"><span>КБ</span></div>
+    <p>Закрийте вікно папки й видаліть її:</p>
+    <div class="code"><button class="copy" type="button" data-copy="cmd5c">Копіювати</button><pre id="cmd5c">Remove-Item "$env:USERPROFILE\fs-test" -Recurse</pre></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="task">
+  <div class="task-head"><span class="num">6</span><h3>Дефрагментація вручну</h3></div>
+  <p class="how">Справжня дефрагментація в Windows потребує прав адміністратора, тому виконайте її на моделі диска. Клітинка — кластер, літера — файл, цифра — номер частини. Диск читається рядками зліва направо.</p>
+  <div class="body">
+    <ol class="q">
+      <li>Запишіть фрагментованість до початку.</li>
+      <li>Зберіть кожен файл суцільно й по порядку (A1 A2 A3 A4…): натисніть частину файлу, потім вільну клітинку.</li>
+      <li>Запишіть кількість ваших переміщень, потім натисніть <span class="path">Автоматично</span> і порівняйте.</li>
+    </ol>
+    <div class="sim" id="sim">
+      <div class="sim-grid" id="simGrid" role="group" aria-label="Модель диска"></div>
+      <div class="sim-side">
+        <div class="legend"><span><i style="background:#1f6fb2"></i>A</span><span><i style="background:#c2571a"></i>B</span><span><i style="background:#2e7d4f"></i>C</span><span><i style="background:#7b4bb7"></i>D</span></div>
+        <div class="stats">
+          <b id="simFrag">0%</b><span>фрагментованість</span>
+          <b id="simParts">0</b><span>фрагментів</span>
+          <b id="simMoves">0</b><span>переміщень</span>
+        </div>
+        <button class="btn-sm" type="button" id="simAuto">Автоматично</button>
+        <button class="btn-sm" type="button" id="simReset">Спочатку</button>
+        <button class="btn-sm" type="button" id="simNew">Новий диск</button>
+        <p class="sim-status" id="simStatus" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="scroll"><table>
+      <tr><th>Фрагментованість до</th><th>Мої переміщення</th><th>Переміщень автоматично</th><th>Фрагментованість після</th></tr>
+      <tr>
+        <td><input type="text" data-key="t6_before" placeholder=" " aria-label="Фрагментованість до"></td>
+        <td><input type="text" data-key="t6_moves" placeholder=" " aria-label="Мої переміщення"></td>
+        <td><input type="text" data-key="t6_auto" placeholder=" " aria-label="Переміщень автоматично"></td>
+        <td><input type="text" data-key="t6_after" placeholder=" " aria-label="Фрагментованість після"></td>
+      </tr>
+    </table></div>
+    <p class="hint">«Автоматично» і «Спочатку» повертають диск, з якого ви починали. «Новий диск» створює інше розміщення.</p>
+  </div>
+</section>
+
+<div class="part"><h2>Очищення диска</h2><p>Скільки місця можна звільнити</p></div>
+
+<!-- 7 -->
+<section class="task">
+  <div class="task-head"><span class="num">7</span><h3>Очищення диска</h3></div>
+  <p class="how"><kbd>Win</kbd> + <kbd>R</kbd> → <span class="path">cleanmgr</span> → диск <span class="path">C:</span> → <span class="path">OK</span>. Запишіть дані й натисніть <span class="path">Скасувати</span>. Повторіть для диска <span class="path">D:</span>.</p>
+  <div class="body scroll"><table>
+    <tr><th>Диск</th><th>Можна звільнити</th><th>Найбільша категорія</th></tr>
+    <tr><td><b>C:</b></td><td><input type="text" data-key="t8_c_total" placeholder=" " aria-label="C: можна звільнити"></td><td><select data-key="t8_c_cat" required aria-label="C: найбільша категорія"><option value="">Оберіть</option><option>Файли завантажених програм</option><option>Тимчасові файли Інтернету</option><option>Діагностичні дані</option><option>Кеш конструктора текстури DirectX</option><option>Файли оптимізації доставки</option><option>Кошик</option><option>Тимчасові файли</option><option>Ескізи</option></select></td></tr>
+    <tr><td><b>D:</b></td><td><input type="text" data-key="t8_d_total" placeholder=" " aria-label="D: можна звільнити"></td><td><select data-key="t8_d_cat" required aria-label="D: найбільша категорія"><option value="">Оберіть</option><option>Файли завантажених програм</option><option>Тимчасові файли Інтернету</option><option>Діагностичні дані</option><option>Кеш конструктора текстури DirectX</option><option>Файли оптимізації доставки</option><option>Кошик</option><option>Тимчасові файли</option><option>Ескізи</option></select></td></tr>
+  </table></div>
+</section>
+
+<section class="finish" aria-labelledby="finishTitle">
+  <h2 id="finishTitle">Здати роботу</h2>
+  <p class="hint" style="margin:0">Після здачі відповіді не можна змінити. Покличте вчителя, щоб перевірити.</p>
+  <div class="stamp" id="stamp"></div>
+  <div class="actions">
+    <button class="btn btn-main" id="submitBtn" type="button">Здати роботу</button>
+    <button class="btn btn-ghost" id="clearBtn" type="button">Очистити все</button>
+  </div>
+  <div class="msg" id="msg" role="alert"></div>
+</section>
+
+<section class="grading">
+  <h2 style="margin-bottom:12px">Оцінювання</h2>
+  <div class="scroll"><table>
+    <tr><th>Що оцінюється</th><th>Бали</th></tr>
+    <tr><td>Дані дисків (завдання 1–4)</td><td>4</td></tr>
+    <tr><td>Завдання 5</td><td>3</td></tr>
+    <tr><td>Завдання 6</td><td>3</td></tr>
+    <tr><td>Завдання 7</td><td>2</td></tr>
+    <tr><th>Разом</th><th>12</th></tr>
+  </table></div>
+</section>
+
+</main>
+
+<script>
+(function(){
+  var STORE = "pr-fs8-v9";
+
+
+  // ---- модель диска ----
+  var SIM = STORE + "-sim";
+  var FILES = [["A",4],["B",3],["C",4],["D",3]];
+  var N = 36;
+  var gridEl = document.getElementById("simGrid");
+  var simBox = document.getElementById("sim");
+  var fragEl = document.getElementById("simFrag"), partsEl = document.getElementById("simParts"),
+      movesEl = document.getElementById("simMoves"), statusEl = document.getElementById("simStatus");
+  var btnAuto = document.getElementById("simAuto"), btnNew = document.getElementById("simNew"), btnBack = document.getElementById("simReset");
+  var sim = null, sel = -1, busy = false, simLocked = false;
+
+  function freshDisk(){
+    var cells = [], i, pos = [];
+    FILES.forEach(function(f){ for (i = 1; i <= f[1]; i++) cells.push(f[0] + i); });
+    for (i = 0; i < N; i++) pos.push(i);
+    var disk, tries = 0;
+    do {
+      for (i = pos.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = pos[i]; pos[i] = pos[j]; pos[j] = t; }
+      disk = new Array(N).fill(null);
+      cells.forEach(function(c, k){ disk[pos[k]] = c; });
+      tries++;
+    } while (measure(disk).pct < 60 && tries < 50);
+    return { start: disk.slice(), disk: disk, moves: 0, auto: false };
+  }
+  function measure(disk){
+    var used = 0, parts = 0;
+    FILES.forEach(function(f){
+      var name = f[0], n = f[1], where = [];
+      for (var k = 1; k <= n; k++) where.push(disk.indexOf(name + k));
+      var runs = 1;
+      for (var k2 = 1; k2 < n; k2++) if (where[k2] !== where[k2 - 1] + 1) runs++;
+      parts += runs; used += n;
+    });
+    var files = FILES.length;
+    return { parts: parts, pct: Math.round((parts - files) / (used - files) * 100) };
+  }
+  function saveSim(){ try { sessionStorage.setItem(SIM, JSON.stringify(sim)); } catch(e){} }
+  function loadSim(){ try { var r = sessionStorage.getItem(SIM); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
+
+  function render(){
+    gridEl.innerHTML = "";
+    sim.disk.forEach(function(c, i){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "cell " + (c ? "f-" + c[0] : "free") + (i === sel ? " sel" : "");
+      if (c) b.innerHTML = c[0] + "<sub>" + c.slice(1) + "</sub>";
+      b.setAttribute("aria-label", "Кластер " + (i + 1) + ": " + (c ? "файл " + c[0] + ", частина " + c.slice(1) : "вільний"));
+      b.disabled = busy || simLocked;
+      b.addEventListener("click", function(){ onCell(i); });
+      gridEl.appendChild(b);
+    });
+    var m = measure(sim.disk);
+    fragEl.textContent = m.pct + "%";
+    partsEl.textContent = m.parts;
+    movesEl.textContent = sim.moves;
+    simBox.classList.toggle("picking", sel > -1);
+    btnAuto.disabled = btnNew.disabled = btnBack.disabled = busy || simLocked;
+    if (!busy) statusEl.textContent = m.pct === 0 ? (sim.auto ? "Автоматична дефрагментація завершена." : "Готово: усі файли суцільні.") : "";
+  }
+  function onCell(i){
+    if (busy || simLocked) return;
+    var c = sim.disk[i];
+    if (c){ sel = (sel === i) ? -1 : i; render(); focusCell(i); return; }
+    if (sel > -1){
+      sim.disk[i] = sim.disk[sel]; sim.disk[sel] = null;
+      sel = -1; sim.moves++; sim.auto = false;
+      saveSim(); render(); focusCell(i);
+    }
+  }
+  function focusCell(i){ var el = gridEl.children[i]; if (el) el.focus(); }
+
+  btnBack.addEventListener("click", function(){ sim.disk = sim.start.slice(); sim.moves = 0; sim.auto = false; sel = -1; saveSim(); render(); });
+  btnNew.addEventListener("click", function(){ sim = freshDisk(); sel = -1; saveSim(); render(); });
+
+  btnAuto.addEventListener("click", function(){
+    sim.disk = sim.start.slice(); sim.moves = 0; sim.auto = true; sel = -1;
+    var order = [];
+    FILES.forEach(function(f){ for (var k = 1; k <= f[1]; k++) order.push(f[0] + k); });
+    busy = true; statusEl.textContent = "Дефрагментація…"; render();
+    var i = 0;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    (function step(){
+      while (i < order.length && sim.disk[i] === order[i]) i++;
+      if (i >= order.length){ busy = false; saveSim(); render(); return; }
+      var from = sim.disk.indexOf(order[i]);
+      var t = sim.disk[i]; sim.disk[i] = sim.disk[from]; sim.disk[from] = t;
+      sim.moves++;
+      if (t){ // зайняту клітинку спершу треба звільнити — це ще одне переміщення
+        sim.moves++;
+      }
+      i++;
+      render();
+      setTimeout(step, reduce ? 0 : 220);
+    })();
+  });
+
+  function simSetLocked(v){ simLocked = v; sel = -1; render(); }
+  function simReset(){ try { sessionStorage.removeItem(SIM); } catch(e){} sim = freshDisk(); sel = -1; saveSim(); simSetLocked(false); }
+
+  sim = loadSim() || freshDisk();
+  saveSim();
+  render();
+
+  // ---- збереження ----
+  var form = document.getElementById("form");
+  function fields(){ return Array.prototype.slice.call(form.querySelectorAll("[data-key]")); }
+
+  function load(){
+    try { var raw = sessionStorage.getItem(STORE); return raw ? JSON.parse(raw) : {}; }
+    catch(e){ return {}; }
+  }
+  function save(state){
+    try { sessionStorage.setItem(STORE, JSON.stringify(state)); } catch(e){}
+  }
+  function collect(){
+    var st = { values:{} , submittedAt: state.submittedAt || null };
+    fields().forEach(function(el){
+      var k = el.dataset.key;
+      if (el.type === "radio"){ if (el.checked) st.values[k] = el.value; }
+      else if (el.value.trim() !== "") st.values[k] = el.value;
+    });
+    return st;
+  }
+
+  var state = load();
+  if (!state.values) state = { values:{}, submittedAt:null };
+  fields().forEach(function(el){
+    var v = state.values[el.dataset.key];
+    if (v === undefined) return;
+    if (el.type === "radio") el.checked = (el.value === v);
+    else el.value = v;
+  });
+
+  // ---- прогрес ----
+  var fill = document.getElementById("fill");
+  var progLabel = document.getElementById("progLabel");
+  var whoLabel = document.getElementById("whoLabel");
+
+  function requiredKeys(){
+    var keys = [];
+    fields().forEach(function(el){
+      if (el.hasAttribute("data-optional")) return;
+      if (keys.indexOf(el.dataset.key) === -1) keys.push(el.dataset.key);
+    });
+    return keys;
+  }
+  function progress(){
+    var keys = requiredKeys(), done = 0;
+    keys.forEach(function(k){ if (state.values[k] !== undefined) done++; });
+    fill.style.width = (keys.length ? Math.round(done / keys.length * 100) : 0) + "%";
+    progLabel.textContent = "Заповнено " + done + " з " + keys.length;
+    return { done: done, total: keys.length };
+  }
+
+  form.addEventListener("input", onChange);
+  form.addEventListener("change", onChange);
+  function onChange(e){
+    if (!e.target.dataset || !e.target.dataset.key) return;
+    state = collect();
+    save(state);
+    progress();
+    armed = false; submitBtn.textContent = "Здати роботу"; msg.textContent = ""; msg.className = "msg";
+  }
+
+  // ---- здача ----
+  var submitBtn = document.getElementById("submitBtn");
+  var clearBtn = document.getElementById("clearBtn");
+  var msg = document.getElementById("msg");
+  var stamp = document.getElementById("stamp");
+  var armed = false, clearArmed = false;
+
+  function lock(){
+    document.body.classList.add("submitted");
+    document.body.classList.remove("empty-mark");
+    fields().forEach(function(el){ el.disabled = true; });
+    simSetLocked(true);
+    document.querySelectorAll("[data-copy]").forEach(function(b){ b.disabled = true; });
+    var d = new Date(state.submittedAt);
+    var t = d.toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" });
+    var p = progress();
+    stamp.innerHTML = "<b>Роботу здано о " + t + "</b>Заповнено " + p.done + " з " + p.total + ". Покличте вчителя.";
+    msg.textContent = "";
+  }
+
+  submitBtn.addEventListener("click", function(){
+    var p = progress();
+    var missing = p.total - p.done;
+    if (missing > 0 && !armed){
+      armed = true;
+      document.body.classList.add("empty-mark");
+      msg.className = "msg bad";
+      msg.textContent = "Не заповнено полів: " + missing + ". Їх позначено кольором. Натисніть ще раз, щоб здати як є.";
+      submitBtn.textContent = "Здати як є";
+      return;
+    }
+    state.submittedAt = Date.now();
+    save(state);
+    lock();
+  });
+
+  clearBtn.addEventListener("click", function(){
+    if (!clearArmed){
+      clearArmed = true;
+      clearBtn.textContent = "Так, очистити все";
+      msg.className = "msg bad";
+      msg.textContent = "Усі відповіді буде видалено. Натисніть ще раз для підтвердження.";
+      setTimeout(function(){ if (clearArmed){ clearArmed = false; clearBtn.textContent = "Очистити все"; if (msg.textContent.indexOf("видалено") > -1) msg.textContent = ""; } }, 5000);
+      return;
+    }
+    clearArmed = false; armed = false;
+    try { sessionStorage.removeItem(STORE); } catch(e){}
+    state = { values:{}, submittedAt:null };
+    fields().forEach(function(el){
+      el.disabled = false;
+      if (el.type === "radio") el.checked = false; else el.value = "";
+    });
+    document.body.classList.remove("submitted", "empty-mark");
+    simReset();
+    document.querySelectorAll("[data-copy]").forEach(function(b){ b.disabled = false; });
+    submitBtn.textContent = "Здати роботу";
+    clearBtn.textContent = "Очистити все";
+    msg.className = "msg"; msg.textContent = "";
+    progress();
+    window.scrollTo(0, 0);
+  });
+
+  // ---- копіювання команд ----
+  function copyText(text, btn, label){
+    function ok(){ btn.textContent = "Скопійовано"; setTimeout(function(){ btn.textContent = label; }, 1500); }
+    function fallback(){
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); ok(); } catch(e){ btn.textContent = "Виділіть вручну"; }
+      document.body.removeChild(ta);
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fallback);
+      else fallback();
+    } catch(e){ fallback(); }
+  }
+  document.querySelectorAll("[data-copy]").forEach(function(btn){
+    var label = btn.textContent;
+    btn.addEventListener("click", function(){ copyText(document.getElementById(btn.dataset.copy).textContent, btn, label); });
+  });
+
+  progress();
+  if (state.submittedAt) lock();
+})();
+</script>
+</body>
+</html>
