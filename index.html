@@ -194,7 +194,7 @@ body.submitted #submitBtn{display:none}
 <header class="intro">
   <h1>Файлові системи та обслуговування дисків</h1>
   <p class="meta">Практична робота для 8 класу. Windows 11, 35 хвилин. Відповіді зберігаються, поки відкрита ця вкладка.</p>
-  <p class="warn">Нічого не видаляйте і не змінюйте на комп’ютері. Виняток — папка <b>fs-test</b> із завдання 5.</p>
+  <p class="warn">Нічого не видаляйте і не змінюйте на комп’ютері, крім того, що вказано в завданнях 5 і 8.</p>
 </header>
 
 <details class="ref">
@@ -367,17 +367,40 @@ body.submitted #submitBtn{display:none}
   </div>
 </section>
 
-<div class="part"><h2>Очищення диска</h2><p>Скільки місця можна звільнити</p></div>
+<div class="part"><h2>Очищення диска</h2><p>Огляд і виконання очищення</p></div>
 
 <!-- 7 -->
 <section class="task">
-  <div class="task-head"><span class="num">7</span><h3>Очищення диска</h3></div>
+  <div class="task-head"><span class="num">7</span><h3>Огляд перед очищенням</h3></div>
   <p class="how"><kbd>Win</kbd> + <kbd>R</kbd> → <span class="path">cleanmgr</span> → диск <span class="path">C:</span> → <span class="path">OK</span>. Запишіть дані й натисніть <span class="path">Скасувати</span>. Повторіть для диска <span class="path">D:</span>.</p>
   <div class="body scroll"><table>
     <tr><th>Диск</th><th>Можна звільнити</th><th>Найбільша категорія</th></tr>
     <tr><td><b>C:</b></td><td><input type="text" data-key="t8_c_total" placeholder=" " aria-label="C: можна звільнити"></td><td><select data-key="t8_c_cat" required aria-label="C: найбільша категорія"><option value="">Оберіть</option><option>Файли завантажених програм</option><option>Тимчасові файли Інтернету</option><option>Діагностичні дані</option><option>Кеш конструктора текстури DirectX</option><option>Файли оптимізації доставки</option><option>Кошик</option><option>Тимчасові файли</option><option>Ескізи</option></select></td></tr>
     <tr><td><b>D:</b></td><td><input type="text" data-key="t8_d_total" placeholder=" " aria-label="D: можна звільнити"></td><td><select data-key="t8_d_cat" required aria-label="D: найбільша категорія"><option value="">Оберіть</option><option>Файли завантажених програм</option><option>Тимчасові файли Інтернету</option><option>Діагностичні дані</option><option>Кеш конструктора текстури DirectX</option><option>Файли оптимізації доставки</option><option>Кошик</option><option>Тимчасові файли</option><option>Ескізи</option></select></td></tr>
   </table></div>
+</section>
+
+<!-- 8 -->
+<section class="task">
+  <div class="task-head"><span class="num">8</span><h3>Очищення через «Сховище»</h3></div>
+  <div class="body">
+    <ol class="q">
+      <li><kbd>Win</kbd> + <kbd>I</kbd> → <span class="path">Система</span> → <span class="path">Сховище</span>. Якщо з’явиться запит пароля адміністратора — натисніть <span class="path">Ні</span> і продовжуйте.</li>
+      <li>Запишіть, скільки місця на диску C: використано і скільки всього.
+        <div class="field inline">
+          <span>Використано</span><input type="text" data-key="t9_used" placeholder=" " aria-label="Використано" style="max-width:130px">
+          <span>з</span><input type="text" data-key="t9_total" placeholder=" " aria-label="Усього" style="max-width:130px">
+        </div></li>
+      <li>Відкрийте <span class="path">Тимчасові файли</span>. Зніміть усі позначки, позначте <b>лише</b> <span class="path">Тимчасові файли</span> і <span class="path">Ескізи</span>. Запишіть їхні розміри в стовпець «До».</li>
+      <li><span class="path">Видалити файли</span> → підтвердіть видалення. Запишіть нові розміри в стовпець «Після».</li>
+    </ol>
+    <div class="scroll"><table>
+      <tr><th>Категорія</th><th>До</th><th>Після</th></tr>
+      <tr><td>Тимчасові файли</td><td><input type="text" data-key="t9_tmp_before" placeholder=" " aria-label="Тимчасові файли до"></td><td><input type="text" data-key="t9_tmp_after" placeholder=" " aria-label="Тимчасові файли після"></td></tr>
+      <tr><td>Ескізи</td><td><input type="text" data-key="t9_thumb_before" placeholder=" " aria-label="Ескізи до"></td><td><input type="text" data-key="t9_thumb_after" placeholder=" " aria-label="Ескізи після"></td></tr>
+    </table></div>
+    <p class="hint">Windows не видаляє файли, які зараз використовуються, тому «Після» може бути не нуль.</p>
+  </div>
 </section>
 
 <section class="finish" aria-labelledby="finishTitle">
@@ -396,9 +419,10 @@ body.submitted #submitBtn{display:none}
   <div class="scroll"><table>
     <tr><th>Що оцінюється</th><th>Бали</th></tr>
     <tr><td>Дані дисків (завдання 1–4)</td><td>4</td></tr>
-    <tr><td>Завдання 5</td><td>3</td></tr>
+    <tr><td>Завдання 5</td><td>2</td></tr>
     <tr><td>Завдання 6</td><td>3</td></tr>
-    <tr><td>Завдання 7</td><td>2</td></tr>
+    <tr><td>Завдання 7</td><td>1</td></tr>
+    <tr><td>Завдання 8</td><td>2</td></tr>
     <tr><th>Разом</th><th>12</th></tr>
   </table></div>
 </section>
@@ -407,7 +431,7 @@ body.submitted #submitBtn{display:none}
 
 <script>
 (function(){
-  var STORE = "pr-fs8-v9";
+  var STORE = "pr-fs8-v11";
 
 
   // ---- модель диска ----
