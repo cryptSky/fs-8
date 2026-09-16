@@ -194,7 +194,7 @@ body.submitted #submitBtn{display:none}
 <header class="intro">
   <h1>Файлові системи та обслуговування дисків</h1>
   <p class="meta">Практична робота для 8 класу. Windows 11, 35 хвилин. Відповіді зберігаються, поки відкрита ця вкладка.</p>
-  <p class="warn">Нічого не видаляйте і не змінюйте на комп’ютері, крім того, що вказано в завданнях 5 і 8.</p>
+  <p class="warn">Нічого не видаляйте і не змінюйте на комп’ютері, крім очищення в завданні 6.</p>
 </header>
 
 <details class="ref">
@@ -216,12 +216,11 @@ body.submitted #submitBtn{display:none}
       <tr><td>Що це</td><td>помилки даних або файлової системи</td><td>несправність самого пристрою</td></tr>
       <tr><td>Причини</td><td>вимкнення живлення, віруси, неправильне виймання флешки</td><td>удар, перегрів, волога, стрибок напруги, знос</td></tr>
       <tr><td>Усунення</td><td>програмно</td><td>ремонт або заміна</td></tr>
-      <tr><td>Ознака в Терміналі</td><td><b>VolumeDirty = True</b> — є помилки файлової системи</td><td><b>Status</b> не <b>OK</b> — диск несправний</td></tr>
     </table></div>
   </div>
 </details>
 
-<div class="part"><h2>Дані дисків</h2><p>Файлова система, обсяг, тип і стан накопичувача</p></div>
+<div class="part"><h2>Дані дисків</h2><p>Файлова система, обсяг і тип накопичувача</p></div>
 
 <!-- 1 -->
 <section class="task">
@@ -271,67 +270,11 @@ body.submitted #submitBtn{display:none}
   </div>
 </section>
 
+<div class="part"><h2>Дефрагментація</h2><p>Як частини файлів розкидаються по диску</p></div>
+
 <!-- 4 -->
 <section class="task">
-  <div class="task-head"><span class="num">4</span><h3>Стан диска</h3></div>
-  <p class="how">У Терміналі виконайте обидві команди й запишіть значення. Розшифровка — у довідці.</p>
-  <div class="body">
-    <div class="code"><button class="copy" type="button" data-copy="cmd4a">Копіювати</button><pre id="cmd4a">Get-CimInstance Win32_DiskDrive | Format-Table Model, Status</pre></div>
-    <div class="code"><button class="copy" type="button" data-copy="cmd4b">Копіювати</button><pre id="cmd4b">Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:' OR DeviceID='D:'" | Format-Table DeviceID, VolumeDirty</pre></div>
-    <div class="scroll"><table>
-      <tr><th>Параметр</th><th>Значення</th><th>Стан</th></tr>
-      <tr><td><b>Status</b> (фізичний, усі диски)</td>
-        <td><input type="text" data-key="t4_status" placeholder=" " aria-label="Status"></td>
-        <td><div class="seg" role="radiogroup" aria-label="Фізичний стан">
-          <label><input type="radio" name="t4_phys" value="Справний" data-key="t4_phys"><span>Справний</span></label>
-          <label><input type="radio" name="t4_phys" value="Несправний" data-key="t4_phys"><span>Несправний</span></label>
-        </div></td></tr>
-      <tr><td><b>VolumeDirty C:</b> (логічний)</td>
-        <td><input type="text" data-key="t4_dirty_c" placeholder=" " aria-label="VolumeDirty C:"></td>
-        <td><div class="seg" role="radiogroup" aria-label="Логічний стан C:">
-          <label><input type="radio" name="t4_log_c" value="Без помилок" data-key="t4_log_c"><span>Без помилок</span></label>
-          <label><input type="radio" name="t4_log_c" value="Є помилки" data-key="t4_log_c"><span>Є помилки</span></label>
-        </div></td></tr>
-      <tr><td><b>VolumeDirty D:</b> (логічний)</td>
-        <td><input type="text" data-key="t4_dirty_d" placeholder=" " aria-label="VolumeDirty D:"></td>
-        <td><div class="seg" role="radiogroup" aria-label="Логічний стан D:">
-          <label><input type="radio" name="t4_log_d" value="Без помилок" data-key="t4_log_d"><span>Без помилок</span></label>
-          <label><input type="radio" name="t4_log_d" value="Є помилки" data-key="t4_log_d"><span>Є помилки</span></label>
-        </div></td></tr>
-    </table></div>
-  </div>
-</section>
-
-<div class="part"><h2>Дефрагментація</h2><p>Кластери і фрагментація файлів</p></div>
-
-<!-- 5 -->
-<section class="task">
-  <div class="task-head"><span class="num">5</span><h3>Розмір файлу і кластер</h3></div>
-  <p class="how">У Терміналі виконайте команди по черзі.</p>
-  <div class="body">
-    <ol class="q">
-      <li>Створіть папку <b>fs-test</b> із трьома файлами (1000, 5000 і 10 000 символів):
-        <div class="code"><button class="copy" type="button" data-copy="cmd5a">Копіювати</button><pre id="cmd5a">New-Item -ItemType Directory "$env:USERPROFILE\fs-test" -Force | Out-Null; 1000, 5000, 10000 | ForEach-Object { Set-Content "$env:USERPROFILE\fs-test\f$_.txt" ('A' * $_) -NoNewline }</pre></div></li>
-      <li>Відкрийте папку:
-        <div class="code"><button class="copy" type="button" data-copy="cmd5b">Копіювати</button><pre id="cmd5b">explorer "$env:USERPROFILE\fs-test"</pre></div></li>
-      <li>Виділіть кожен файл → <kbd>Alt</kbd> + <kbd>Enter</kbd>. Запишіть <span class="path">Розмір</span> і <span class="path">На диску</span>.</li>
-    </ol>
-    <div class="scroll"><table>
-      <tr><th>Файл</th><th>Розмір</th><th>На диску</th></tr>
-      <tr><td>f1000.txt</td><td><input type="text" data-key="t5_1_s" placeholder=" " aria-label="f1000 розмір"></td><td><input type="text" data-key="t5_1_d" placeholder=" " aria-label="f1000 на диску"></td></tr>
-      <tr><td>f5000.txt</td><td><input type="text" data-key="t5_2_s" placeholder=" " aria-label="f5000 розмір"></td><td><input type="text" data-key="t5_2_d" placeholder=" " aria-label="f5000 на диску"></td></tr>
-      <tr><td>f10000.txt</td><td><input type="text" data-key="t5_3_s" placeholder=" " aria-label="f10000 розмір"></td><td><input type="text" data-key="t5_3_d" placeholder=" " aria-label="f10000 на диску"></td></tr>
-    </table></div>
-    <p class="hint">Розмір кластера Windows не показує — визначте його самі. Файл f1000.txt менший за один кластер, тому займає рівно один: його значення «На диску» і є розміром кластера. Перевірте: «На диску» інших файлів має ділитися на нього без остачі.</p>
-    <div class="field inline"><span>Розмір кластера</span><input type="text" data-key="t5_cluster" placeholder=" " aria-label="Розмір кластера" style="max-width:120px"><span>КБ</span></div>
-    <p>Закрийте вікно папки й видаліть її:</p>
-    <div class="code"><button class="copy" type="button" data-copy="cmd5c">Копіювати</button><pre id="cmd5c">Remove-Item "$env:USERPROFILE\fs-test" -Recurse</pre></div>
-  </div>
-</section>
-
-<!-- 6 -->
-<section class="task">
-  <div class="task-head"><span class="num">6</span><h3>Дефрагментація вручну</h3></div>
+  <div class="task-head"><span class="num">4</span><h3>Дефрагментація вручну</h3></div>
   <p class="how">Справжня дефрагментація в Windows потребує прав адміністратора, тому виконайте її на моделі диска. Клітинка — кластер, літера — файл, цифра — номер частини. Диск читається рядками зліва направо.</p>
   <div class="body">
     <ol class="q">
@@ -369,9 +312,9 @@ body.submitted #submitBtn{display:none}
 
 <div class="part"><h2>Очищення диска</h2><p>Огляд і виконання очищення</p></div>
 
-<!-- 7 -->
+<!-- 5 -->
 <section class="task">
-  <div class="task-head"><span class="num">7</span><h3>Огляд перед очищенням</h3></div>
+  <div class="task-head"><span class="num">5</span><h3>Огляд перед очищенням</h3></div>
   <p class="how"><kbd>Win</kbd> + <kbd>R</kbd> → <span class="path">cleanmgr</span> → диск <span class="path">C:</span> → <span class="path">OK</span>. Запишіть дані й натисніть <span class="path">Скасувати</span>. Повторіть для диска <span class="path">D:</span>.</p>
   <div class="body scroll"><table>
     <tr><th>Диск</th><th>Можна звільнити</th><th>Найбільша категорія</th></tr>
@@ -380,9 +323,9 @@ body.submitted #submitBtn{display:none}
   </table></div>
 </section>
 
-<!-- 8 -->
+<!-- 6 -->
 <section class="task">
-  <div class="task-head"><span class="num">8</span><h3>Очищення через «Сховище»</h3></div>
+  <div class="task-head"><span class="num">6</span><h3>Очищення через «Сховище»</h3></div>
   <div class="body">
     <ol class="q">
       <li><kbd>Win</kbd> + <kbd>I</kbd> → <span class="path">Система</span> → <span class="path">Сховище</span>. Якщо з’явиться запит пароля адміністратора — натисніть <span class="path">Ні</span> і продовжуйте.</li>
@@ -418,11 +361,10 @@ body.submitted #submitBtn{display:none}
   <h2 style="margin-bottom:12px">Оцінювання</h2>
   <div class="scroll"><table>
     <tr><th>Що оцінюється</th><th>Бали</th></tr>
-    <tr><td>Дані дисків (завдання 1–4)</td><td>4</td></tr>
+    <tr><td>Дані дисків (завдання 1–3)</td><td>4</td></tr>
+    <tr><td>Завдання 4</td><td>4</td></tr>
     <tr><td>Завдання 5</td><td>2</td></tr>
-    <tr><td>Завдання 6</td><td>3</td></tr>
-    <tr><td>Завдання 7</td><td>1</td></tr>
-    <tr><td>Завдання 8</td><td>2</td></tr>
+    <tr><td>Завдання 6</td><td>2</td></tr>
     <tr><th>Разом</th><th>12</th></tr>
   </table></div>
 </section>
@@ -431,7 +373,7 @@ body.submitted #submitBtn{display:none}
 
 <script>
 (function(){
-  var STORE = "pr-fs8-v11";
+  var STORE = "pr-fs8-v12";
 
 
   // ---- модель диска ----
